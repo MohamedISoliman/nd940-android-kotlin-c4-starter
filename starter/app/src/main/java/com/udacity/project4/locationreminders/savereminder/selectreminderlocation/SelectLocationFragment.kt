@@ -1,39 +1,35 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 
-import android.Manifest
-import android.app.Activity
-import android.content.Intent
-import android.content.IntentSender
-import android.content.pm.PackageManager
-import android.content.res.Resources
 import android.os.Bundle
-import android.util.Log
 import android.view.*
-import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
-import com.google.android.material.snackbar.Snackbar
-import com.udacity.project4.R
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
+import com.udacity.project4.*
 import com.udacity.project4.base.BaseFragment
-import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
+import kotlinx.android.synthetic.main.fragment_select_location.*
 import org.koin.android.ext.android.inject
 
-class SelectLocationFragment : BaseFragment() {
+
+class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     //Use Koin to get the view model of the SaveReminder
     override val _viewModel: SaveReminderViewModel by inject()
     private lateinit var binding: FragmentSelectLocationBinding
+
+    private val GPS_SETTINGS_REQUEST_ID = 30303
+    private var selectedMarker: Marker? = null
+    private var googleMap: GoogleMap? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -47,44 +43,90 @@ class SelectLocationFragment : BaseFragment() {
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
 
-//        TODO: add the map setup implementation
-//        TODO: zoom to the user location after taking his permission
-//        TODO: add style to the map
-//        TODO: put a marker to location that the user selected
-
-
-//        TODO: call this function after the user confirms on the selected location
-        onLocationSelected()
+        val findFragmentById = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
+        findFragmentById.getMapAsync(this)
 
         return binding.root
     }
-
-    private fun onLocationSelected() {
-        //        TODO: When the user confirms on the selected location,
-        //         send back the selected location details to the view model
-        //         and navigate back to the previous fragment to save the reminder and add the geofence
-    }
-
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.map_options, menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        // TODO: Change the map type based on the user's selection.
         R.id.normal_map -> {
+            googleMap?.mapType = GoogleMap.MAP_TYPE_NORMAL
             true
         }
         R.id.hybrid_map -> {
+            googleMap?.mapType = GoogleMap.MAP_TYPE_HYBRID
             true
         }
         R.id.satellite_map -> {
+            googleMap?.mapType = GoogleMap.MAP_TYPE_SATELLITE
             true
         }
         R.id.terrain_map -> {
+            googleMap?.mapType = GoogleMap.MAP_TYPE_TERRAIN
             true
         }
         else -> super.onOptionsItemSelected(item)
+    }
+
+    override fun onMapReady(map: GoogleMap?) {
+        this.googleMap = map
+        styleMap(map)
+        selectLocationListener(map)
+        activity?.checkLocationPermission({
+            activity?.checkGPS { isEnabled ->
+                if (isEnabled) {
+                    onGPSEnabled(map)
+                } else {
+                    activity?.enableGPS(GPS_SETTINGS_REQUEST_ID, {
+                        onGPSEnabled(map)
+                    })
+                }
+            }
+        }, {
+            //Permission Denied
+        })
+    }
+
+    private fun styleMap(map: GoogleMap?) {
+        map?.setMapStyle(MapStyleOptions.loadRawResourceStyle(activity, R.raw.map_style))
+
+    }
+
+    private fun selectLocationListener(map: GoogleMap?) {
+        map?.setOnMapClickListener { latLng ->
+            selectPositionOnMap(latLng, map)
+        }
+    }
+
+    private fun selectPositionOnMap(
+        latLng: LatLng,
+        map: GoogleMap?
+    ) {
+        selectedMarker?.remove()
+        selectedMarker?.position = latLng
+        map?.addMarker(MarkerOptions().position(latLng)).also {
+            selectedMarker = it
+        }
+        map?.animateCamera(CameraUpdateFactory.newLatLng(latLng))
+        updateViewModelSelectedPosition(latLng)
+    }
+
+    private fun updateViewModelSelectedPosition(latLng: LatLng) {
+        _viewModel.latitude.postValue(latLng.latitude)
+        _viewModel.longitude.postValue(latLng.longitude)
+    }
+
+    private fun onGPSEnabled(map: GoogleMap?) {
+        retrieveLocation({
+            selectPositionOnMap(LatLng(it.latitude, it.longitude), map)
+        }, {
+
+        })
     }
 
 

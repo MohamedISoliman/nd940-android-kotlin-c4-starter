@@ -125,5 +125,6 @@ dependencies {
     implementation "com.firebaseui:firebase-ui-auth:$firebaseVersion"
 
 
+    implementation 'com.karumi:dexter:6.0.2'
 
 }
