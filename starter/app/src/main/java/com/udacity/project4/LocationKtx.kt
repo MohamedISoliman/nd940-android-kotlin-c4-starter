@@ -28,7 +28,10 @@ import com.karumi.dexter.listener.single.PermissionListener
  *
  * Created by Mohamed Ibrahim on 3/24/20.
  */
-fun FragmentActivity.checkLocationPermission(onGranted: () -> Unit, onDenied: () -> Unit) {
+fun FragmentActivity.checkLocationPermission(
+    onGranted: () -> Unit,
+    onDenied: () -> Unit = {}
+) {
     Dexter.withActivity(this)
         .withPermission(Manifest.permission.ACCESS_FINE_LOCATION)
         .withListener(object : PermissionListener {
