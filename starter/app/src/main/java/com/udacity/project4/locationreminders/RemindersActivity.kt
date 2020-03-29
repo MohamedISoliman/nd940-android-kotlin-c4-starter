@@ -40,10 +40,6 @@ class RemindersActivity : AppCompatActivity() {
                 (nav_host_fragment as NavHostFragment).navController.popBackStack()
                 return true
             }
-            R.id.logout -> {
-                FirebaseAuth.getInstance().signOut()
-                startActivity(AuthenticationActivity.startIntent(this))
-            }
         }
         return super.onOptionsItemSelected(item)
     }
