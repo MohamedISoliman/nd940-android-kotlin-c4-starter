@@ -1,6 +1,7 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 
+import android.location.Geocoder
 import android.os.Bundle
 import android.view.*
 import androidx.databinding.DataBindingUtil
@@ -117,6 +118,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     }
 
     private fun updateViewModelSelectedPosition(latLng: LatLng) {
+        val fromLocation = Geocoder(activity).getFromLocation(latLng.latitude, latLng.longitude, 2)
+        _viewModel.reminderSelectedLocationStr.postValue(fromLocation[0].locality)
         _viewModel.latitude.postValue(latLng.latitude)
         _viewModel.longitude.postValue(latLng.longitude)
     }
@@ -124,8 +127,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private fun onGPSEnabled(map: GoogleMap?) {
         retrieveLocation({
             selectPositionOnMap(LatLng(it.latitude, it.longitude), map)
-        }, {
-
         })
     }
 

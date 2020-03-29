@@ -99,7 +99,10 @@ private fun FragmentActivity.handleGPSRequestError(
     }
 }
 
-fun Fragment.retrieveLocation(onSuccess: (Location) -> Unit, onError: (Exception) -> Unit) {
+fun Fragment.retrieveLocation(
+    onSuccess: (Location) -> Unit,
+    onError: (Exception) -> Unit = {}
+) {
     LocationServices.getFusedLocationProviderClient(activity!!)
         .lastLocation.addOnSuccessListener { onSuccess(it) }.addOnFailureListener { onError(it) }
 }
